@@ -1,13 +1,18 @@
 package com.yeo.memo;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.app.ProgressDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -16,9 +21,11 @@ import android.widget.ProgressBar;
 import com.yeo.memo.adapter.MemoAdapter;
 import com.yeo.memo.api.MemoApi;
 import com.yeo.memo.api.NetworkClient;
+import com.yeo.memo.api.UserApi;
 import com.yeo.memo.config.Config;
 import com.yeo.memo.model.Memo;
 import com.yeo.memo.model.MemoList;
+import com.yeo.memo.model.PostRes;
 
 import java.util.ArrayList;
 
@@ -43,12 +50,16 @@ public class MainActivity extends AppCompatActivity {
     int offset = 0;
     int limit = 7;
     int count = 0;
+    private ProgressDialog dialog;
+
+    int index;
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
 
         // 1. 쉐어드프리퍼런스에 억세스토큰을 가져온다.
         SharedPreferences sp =
@@ -195,6 +206,124 @@ public class MainActivity extends AppCompatActivity {
         });
 
     }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.main, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+
+        int itemId = item.getItemId();
+
+        if(itemId == R.id.menuLogout){
+            // 로그아웃 처리해준다.
+            Retrofit retrofit = NetworkClient.getRetrofitClient(MainActivity.this);
+            UserApi api = retrofit.create(UserApi.class);
+            SharedPreferences sp = getApplication().getSharedPreferences(Config.PREFERENCES_NAME, MODE_PRIVATE);
+            String accessToken = sp.getString("accessToken", "");
+            Call<PostRes> call = api.logout("Bearer " + accessToken);
+
+            showProgress("로그아웃...");
+            call.enqueue(new Callback<PostRes>() {
+                @Override
+                public void onResponse(Call<PostRes> call, Response<PostRes> response) {
+                    dismissProgress();
+                    if(response.isSuccessful()){
+
+                        // 네트워크에서 잘 처리가 되었으면,
+                        // 클라이언트에서도 로그인 정보를 가지고 있는
+                        // 억세스토큰을 초기화 시켜야한다.
+                        SharedPreferences sp = getApplication().getSharedPreferences(Config.PREFERENCES_NAME, MODE_PRIVATE);
+                        SharedPreferences.Editor editor = sp.edit();
+                        editor.putString("accessToken", "");
+                        editor.apply();
+
+                        Intent intent = new Intent(MainActivity.this, RegisterActivity.class);
+                        startActivity(intent);
+                        finish();
+                    }else{
+
+                    }
+                }
+
+                @Override
+                public void onFailure(Call<PostRes> call, Throwable t) {
+                    dismissProgress();
+                }
+            });
+
+        }
+
+        return super.onOptionsItemSelected(item);
+    }
+
+    void showProgress(String message){
+        dialog = new ProgressDialog(this);
+        dialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+        dialog.setMessage(message);
+        dialog.show();
+    }
+
+    void dismissProgress(){
+        dialog.dismiss();
+    }
+
+    public void deleteMemo(int index){
+
+        this.index = index;
+
+        // 여기에 알러트다이얼로그 띄우고
+        // 알러트다이얼로그에서 YES 버튼 누르면,
+        // 네트워크로 API 호출하여, 해당 메모 삭제하고,
+        // 삭제하고 나면, 화면에 반영해줘야한다.
+
+        AlertDialog.Builder alert = new AlertDialog.Builder(MainActivity.this);
+        alert.setTitle(R.string.alert_main_title);
+        alert.setMessage(R.string.alert_main_message);
+        alert.setPositiveButton("YES", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+
+                Retrofit retrofit = NetworkClient.getRetrofitClient(MainActivity.this);
+                MemoApi api = retrofit.create(MemoApi.class);
+
+                SharedPreferences sp = getApplication().getSharedPreferences(Config.PREFERENCES_NAME, MODE_PRIVATE);
+                String accessToken = sp.getString("accessToken", "");
+
+                Memo memo = memoList.get(index);
+                int memoId = memo.getId();
+
+                Call<PostRes> call = api.deleteMemo("Bearer "+accessToken, memoId);
+
+                showProgress("메모 삭제중...");
+                call.enqueue(new Callback<PostRes>() {
+                    @Override
+                    public void onResponse(Call<PostRes> call, Response<PostRes> response) {
+                        dismissProgress();
+
+                        if(response.isSuccessful()){
+                            // 이부분 코딩~
+                        }else{
+
+                        }
+
+                    }
+
+                    @Override
+                    public void onFailure(Call<PostRes> call, Throwable t) {
+                        dismissProgress();
+                    }
+                });
+            }
+        });
+        alert.setNegativeButton("NO", null);
+        alert.show();
+
+    }
+
 }
 
 

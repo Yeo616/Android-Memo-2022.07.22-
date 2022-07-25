@@ -53,7 +53,7 @@
             android:textSize="28sp" />
 
         <TextView
-            android:id="@+id/textRegister"
+            android:id="@+id/txtRegister"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_margin="30dp"

@@ -13,6 +13,7 @@ import androidx.cardview.widget.CardView;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.yeo.memo.EditActivity;
+import com.yeo.memo.MainActivity;
 import com.yeo.memo.R;
 import com.yeo.memo.model.Memo;
 
@@ -22,6 +23,8 @@ public class MemoAdapter extends RecyclerView.Adapter<MemoAdapter.ViewHolder> {
 
     Context context;
     List<Memo> memoList;
+
+    public int index;
 
     public MemoAdapter(Context context, List<Memo> memoList) {
         this.context = context;
@@ -43,6 +46,7 @@ public class MemoAdapter extends RecyclerView.Adapter<MemoAdapter.ViewHolder> {
         holder.txtTitle.setText(memo.getTitle());
         holder.txtDate.setText( memo.getDate().replace("T", " ").substring(0, 15+1)  );
         holder.txtContent.setText(memo.getContent());
+
     }
 
     @Override
@@ -77,6 +81,7 @@ public class MemoAdapter extends RecyclerView.Adapter<MemoAdapter.ViewHolder> {
                     Intent intent = new Intent(context, EditActivity.class);
                     intent.putExtra("memo", memo);
                     context.startActivity(intent);
+
                 }
             });
 
@@ -84,8 +89,21 @@ public class MemoAdapter extends RecyclerView.Adapter<MemoAdapter.ViewHolder> {
                 @Override
                 public void onClick(View view) {
 
+                    // 여기에 알러트다이얼로그 띄우고
+                    // 알러트다이얼로그에서 YES 버튼 누르면,
+                    // 네트워크로 API 호출하여, 해당 메모 삭제하고,
+                    // 삭제하고 나면, 화면에 반영해줘야한다.
+
+                    // 위의 일을! 메인액티비티에서하는 함수를 만들고,
+                    // 여기서는 메인액티비티의 함수만 호출해 주자!
+
+                    index = getAdapterPosition();
+
+                    ((MainActivity)context).deleteMemo(index);
+
                 }
             });
+
         }
     }
 }

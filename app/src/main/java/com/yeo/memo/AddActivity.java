@@ -169,6 +169,7 @@ public class AddActivity extends AppCompatActivity {
 
                                 time = hourStr + ":" + minStr;
                                 btnTime.setText(time);
+
                             }
                         },
                         current.get(Calendar.HOUR_OF_DAY),
